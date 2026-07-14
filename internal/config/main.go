@@ -30,8 +30,8 @@ type F5F5osConfig struct {
 type AuthKeys map[Target]TargetAuth
 
 type TargetAuth struct {
-	UserName        string      `yaml:"username"`
-	Password        string      `yaml:"password"`
+	UserName        string        `yaml:"username"`
+	Password        string        `yaml:"password"`
 	TokenExpiryTime time.Duration `yaml:"token_expiry"`
 }
 

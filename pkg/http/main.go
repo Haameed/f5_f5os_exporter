@@ -21,7 +21,7 @@ func NewBigIPClient(ctx context.Context, tgt url.URL, hc *http.Client, aConfig c
 	if !ok {
 		return nil, fmt.Errorf("no API authentication registered for %q", tgt.String())
 	}
-	token, err := utils.GetToken(tgt.String(), auth.UserName, auth.Password, auth.TokenExpiryTime , aConfig.TLSInsecure, time.Duration(aConfig.ScrapeTimeout))
+	token, err := utils.GetToken(tgt.String(), auth.UserName, auth.Password, auth.TokenExpiryTime, aConfig.TLSInsecure, time.Duration(aConfig.ScrapeTimeout))
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain token: %w", err)
 	}

@@ -53,7 +53,7 @@ func (p *Collector) Probe(ctx context.Context, target map[string]string, hc *htt
 		{"Hardware", GetHardwareProbe},
 		{"LACP", GetLACPProbe},
 		{"Interface", GetInterfaceProbe},
-		{"License", GetLicenseProbe}, 
+		{"License", GetLicenseProbe},
 	}
 
 	success := true
