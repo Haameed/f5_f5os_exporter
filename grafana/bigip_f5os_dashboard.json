@@ -1,0 +1,614 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus datasource containing the F5 F5OS exporter metrics",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["f5", "f5os", "bigip", "network"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(bigip_f5os_info, target)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Target",
+        "multi": true,
+        "name": "target",
+        "options": [],
+        "query": { "query": "label_values(bigip_f5os_info, target)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(bigip_f5os_interface_info{target=~\"$target\"}, interface)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Interface",
+        "multi": true,
+        "name": "interface",
+        "options": [],
+        "query": { "query": "label_values(bigip_f5os_interface_info{target=~\"$target\"}, interface)", "refId": "StandardVariableQuery" },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "F5 F5OS Platform Overview",
+  "uid": null,
+  "version": 1,
+  "panels": [
+    { "type": "row", "title": "Device", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "panels": [] },
+    {
+      "type": "table", "title": "F5OS Info",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Platform identity and TPM integrity status per target (description/model, serial number, part number, TPM status).",
+      "gridPos": { "h": 5, "w": 14, "x": 0, "y": 1 }, "id": 2,
+      "options": { "showHeader": true },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "TPM Status" }, "properties": [
+            { "id": "mappings", "value": [ { "type": "value", "options": { "Valid": { "color": "green", "index": 0 } } } ] },
+            { "id": "custom.cellOptions", "value": { "type": "color-text" } } ] },
+          { "matcher": { "id": "byName", "options": "Value" }, "properties": [ { "id": "custom.hidden", "value": true } ] }
+        ]
+      },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_info{target=~\"$target\"}", "format": "table", "instant": true, "refId": "A" } ],
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "cluster": true },
+          "renameByName": { "target": "Target", "description": "Description", "serial": "Serial No", "part_no": "Part No", "tmp_status": "TPM Status" } } }
+      ]
+    },
+    {
+      "type": "table", "title": "License",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Active license summary parsed from the F5OS license blob: licensed software version and platform ID.",
+      "gridPos": { "h": 5, "w": 10, "x": 14, "y": 1 }, "id": 3,
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [
+        { "matcher": { "id": "byName", "options": "Value" }, "properties": [ { "id": "custom.hidden", "value": true } ] } ] },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_license_info{target=~\"$target\"}", "format": "table", "instant": true, "refId": "A" } ],
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "cluster": true },
+          "renameByName": { "target": "Target", "licensed_version": "Licensed Version", "platform_id": "Platform ID" } } }
+      ]
+    },
+    {
+      "type": "stat", "title": "Service Check Date",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Date of the last license service check (from the license file). Rendered as ISO date; value is a Unix timestamp scaled to ms.",
+      "gridPos": { "h": 4, "w": 5, "x": 0, "y": 6 }, "id": 4,
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_license_service_check_date_seconds{target=~\"$target\"} * 1000", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "stat", "title": "Licensed Date",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Date the current license was issued/activated (from the license file). Rendered as ISO date.",
+      "gridPos": { "h": 4, "w": 5, "x": 5, "y": 6 }, "id": 5,
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_license_licensed_date_seconds{target=~\"$target\"} * 1000", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "stat", "title": "Service Check Age",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Days elapsed since the last license service check. Yellow at 300 days, red at 365 days — an aged service-check date can indicate license/entitlement drift.",
+      "gridPos": { "h": 4, "w": 4, "x": 10, "y": 6 }, "id": 60,
+      "fieldConfig": { "defaults": { "unit": "days", "decimals": 0,
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 300 }, { "color": "red", "value": 365 } ] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "(time() - bigip_f5os_license_service_check_date_seconds{target=~\"$target\"}) / 86400", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "gauge", "title": "Memory Used %",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Percentage of platform memory currently in use. Yellow at 75%, red at 90%.",
+      "gridPos": { "h": 8, "w": 4, "x": 14, "y": 6 }, "id": 6,
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 75 }, { "color": "red", "value": 90 } ] } } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdMarkers": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_Memory_used_percent{target=~\"$target\"}", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries", "title": "Platform Memory (Used vs Total)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Absolute platform memory used versus total capacity, in bytes.",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 6 }, "id": 7,
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_Memory_platform_used_bytes{target=~\"$target\"}", "legendFormat": "Used {{target}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_Memory_platform_total_bytes{target=~\"$target\"}", "legendFormat": "Total {{target}}", "refId": "B" }
+      ]
+    },
+    {
+      "type": "stat", "title": "Memory Available",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Memory available for allocation (bytes).",
+      "gridPos": { "h": 4, "w": 5, "x": 0, "y": 10 }, "id": 8,
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_Memory_available_bytes{target=~\"$target\"}", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "stat", "title": "Memory Free",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Currently free (unused) memory (bytes).",
+      "gridPos": { "h": 4, "w": 5, "x": 5, "y": 10 }, "id": 9,
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_Memory_free_bytes{target=~\"$target\"}", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+
+    { "type": "row", "title": "Compute", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "id": 10, "panels": [] },
+    {
+      "type": "stat", "title": "CPU Count",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Number of physical CPU cores reported by the platform.",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 15 }, "id": 11,
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_count{target=~\"$target\"}", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "stat", "title": "CPU Thread Count",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Number of logical CPU threads (hardware threads) on the platform.",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 15 }, "id": 12,
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_thread_count{target=~\"$target\"}", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "stat", "title": "CPU Frequency",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Rated CPU clock frequency (Hz). Exporter converts the reported MHz value to Hz.",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 15 }, "id": 13,
+      "fieldConfig": { "defaults": { "unit": "hertz" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_frequency_hz{target=~\"$target\"}", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "stat", "title": "CPU Cache Size",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "CPU cache size reported by the platform (KiB).",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 15 }, "id": 14,
+      "fieldConfig": { "defaults": { "unit": "kbytes" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_cache_size_kb{target=~\"$target\"}", "legendFormat": "{{target}}", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries", "title": "CPU Utilization (current & averages)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Overall CPU utilization: instantaneous current plus 5-second, 1-minute and 5-minute rolling averages.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 }, "id": 15,
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_utilization_percent{target=~\"$target\"}", "legendFormat": "current {{target}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_utilization_5sec_avg_percent{target=~\"$target\"}", "legendFormat": "5s avg {{target}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_utilization_1min_avg_percent{target=~\"$target\"}", "legendFormat": "1m avg {{target}}", "refId": "C" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_utilization_5min_avg_percent{target=~\"$target\"}", "legendFormat": "5m avg {{target}}", "refId": "D" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "CPU Thread Utilization (current)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-thread instantaneous CPU utilization. One series per hardware thread (cpu0, cpu1, …).",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 }, "id": 16,
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_thread_utilization_percent{target=~\"$target\"}", "legendFormat": "{{thread_name}}", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries", "title": "CPU Thread Utilization (1m avg)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-thread 1-minute average CPU utilization — smoother view for spotting sustained per-core load imbalance.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 27 }, "id": 17,
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_cpu_thread_utilization_1min_avg_percent{target=~\"$target\"}", "legendFormat": "{{thread_name}}", "refId": "A" } ]
+    },
+
+    { "type": "row", "title": "Disks", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 }, "id": 20, "panels": [] },
+    {
+      "type": "table", "title": "Disk Inventory",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Installed storage devices with model, serial, type and capacity (GB).",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 36 }, "id": 21,
+      "fieldConfig": { "defaults": {}, "overrides": [
+        { "matcher": { "id": "byName", "options": "Size (GB)" }, "properties": [ { "id": "unit", "value": "decgbytes" } ] } ] },
+      "options": { "showHeader": true },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_storage_disk_size_gb{target=~\"$target\"}", "format": "table", "instant": true, "refId": "A" } ],
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "cluster": true },
+          "renameByName": { "target": "Target", "disk_name": "Disk", "model": "Model", "serial": "Serial", "type": "Type", "Value": "Size (GB)" } } }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Disk IOPS (per second)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-second I/O operations derived via rate() of the cumulative IOPS counters — total, read and write, per disk.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 }, "id": 22,
+      "fieldConfig": { "defaults": { "unit": "iops", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_total_iops{target=~\"$target\"}[5m])", "legendFormat": "total {{disk_name}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_read_iops{target=~\"$target\"}[5m])", "legendFormat": "read {{disk_name}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_write_iops{target=~\"$target\"}[5m])", "legendFormat": "write {{disk_name}}", "refId": "C" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Disk Throughput (per second)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-second disk read/write throughput in bytes/s, derived via rate() of the cumulative byte counters.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 }, "id": 23,
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_read_bytes{target=~\"$target\"}[5m])", "legendFormat": "read {{disk_name}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_write_bytes{target=~\"$target\"}[5m])", "legendFormat": "write {{disk_name}}", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Disk Avg Latency (ms per op)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Average I/O latency per operation = rate(latency-ms counter) / rate(IOPS counter). clamp_min avoids divide-by-zero when idle.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 50 }, "id": 24,
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_read_latency_ms{target=~\"$target\"}[5m]) / clamp_min(rate(bigip_f5os_storage_disk_read_iops{target=~\"$target\"}[5m]), 1)", "legendFormat": "read {{disk_name}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_write_latency_ms{target=~\"$target\"}[5m]) / clamp_min(rate(bigip_f5os_storage_disk_write_iops{target=~\"$target\"}[5m]), 1)", "legendFormat": "write {{disk_name}}", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Disk Merged I/O (per second)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-second count of merged (coalesced) read/write requests — high values indicate the I/O scheduler is batching adjacent requests.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 50 }, "id": 25,
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_read_merged{target=~\"$target\"}[5m])", "legendFormat": "read merged {{disk_name}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_storage_disk_write_merged{target=~\"$target\"}[5m])", "legendFormat": "write merged {{disk_name}}", "refId": "B" }
+      ]
+    },
+
+    { "type": "row", "title": "Hardware", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 58 }, "id": 30, "panels": [] },
+    {
+      "type": "timeseries", "title": "Platform Temperature",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Platform temperature in °C: current, average, minimum and maximum. Red threshold at 70°C.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 59 }, "id": 31,
+      "fieldConfig": { "defaults": { "unit": "celsius", "custom": { "drawStyle": "line", "fillOpacity": 10 },
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 70 } ] } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_temperature_current_celsius{target=~\"$target\"}", "legendFormat": "current {{target}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_temperature_average_celsius{target=~\"$target\"}", "legendFormat": "avg {{target}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_temperature_minimum_celsius{target=~\"$target\"}", "legendFormat": "min {{target}}", "refId": "C" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_temperature_maximum_celsius{target=~\"$target\"}", "legendFormat": "max {{target}}", "refId": "D" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Chassis Fan Speed",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Rotational speed (RPM) of each chassis fan-tray fan. A fan dropping toward 0 indicates a fan fault.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 59 }, "id": 32,
+      "fieldConfig": { "defaults": { "unit": "rotrpm", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_fan_speed_rpm{target=~\"$target\"}", "legendFormat": "{{fan_name}}", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries", "title": "PSU Voltage",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-PSU input and output voltage (V). Output dropping toward 0 indicates PSU failure or removal.",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 67 }, "id": 33,
+      "fieldConfig": { "defaults": { "unit": "volt", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_voltage_in_volt{target=~\"$target\"}", "legendFormat": "Vin {{psu_name}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_voltage_out_volt{target=~\"$target\"}", "legendFormat": "Vout {{psu_name}}", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "PSU Current",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-PSU input and output current (A).",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 67 }, "id": 34,
+      "fieldConfig": { "defaults": { "unit": "amp", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_current_in_amp{target=~\"$target\"}", "legendFormat": "Iin {{psu_name}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_current_out_amp{target=~\"$target\"}", "legendFormat": "Iout {{psu_name}}", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "PSU Fan Speed",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Internal PSU fan speed (RPM) per power supply.",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 67 }, "id": 35,
+      "fieldConfig": { "defaults": { "unit": "rotrpm", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_fan_1_speed_rpm{target=~\"$target\"}", "legendFormat": "fan1 {{psu_name}}", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries", "title": "PSU Temperatures",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Three internal temperature sensors (°C) per PSU.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 75 }, "id": 36,
+      "fieldConfig": { "defaults": { "unit": "celsius", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_temperature_1_celsius{target=~\"$target\"}", "legendFormat": "T1 {{psu_name}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_temperature_2_celsius{target=~\"$target\"}", "legendFormat": "T2 {{psu_name}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_psu_temperature_3_celsius{target=~\"$target\"}", "legendFormat": "T3 {{psu_name}}", "refId": "C" }
+      ]
+    },
+
+    { "type": "row", "title": "Interfaces", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 83 }, "id": 40, "panels": [] },
+    {
+      "type": "table", "title": "Interface Status",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Operational status per interface with FEC mode and LACP state. Oper Status colored green (UP) / red (DOWN).",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 84 }, "id": 41,
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [
+        { "matcher": { "id": "byName", "options": "Oper Status" }, "properties": [
+          { "id": "mappings", "value": [ { "type": "value", "options": {
+            "UP": { "color": "green", "index": 0 }, "DOWN": { "color": "red", "index": 1 } } } ] },
+          { "id": "custom.cellOptions", "value": { "type": "color-text" } } ] },
+        { "matcher": { "id": "byName", "options": "Value" }, "properties": [ { "id": "custom.hidden", "value": true } ] } ] },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_interface_info{target=~\"$target\", interface=~\"$interface\"}", "format": "table", "instant": true, "refId": "A" } ],
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "cluster": true, "type": true },
+          "renameByName": { "target": "Target", "interface": "Interface", "oper_status": "Oper Status", "fec": "FEC", "lacp_state": "LACP State" } } }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Interface Throughput In (bits/s)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Inbound throughput in bits/s = rate(in-octets counter) × 8, per selected interface.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 91 }, "id": 42,
+      "fieldConfig": { "defaults": { "unit": "bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_in_octets_total{target=~\"$target\", interface=~\"$interface\"}[5m]) * 8", "legendFormat": "in {{interface}}", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries", "title": "Interface Throughput Out (bits/s)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Outbound throughput in bits/s = rate(out-octets counter) × 8, per selected interface.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 91 }, "id": 43,
+      "fieldConfig": { "defaults": { "unit": "bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_out_octets_total{target=~\"$target\", interface=~\"$interface\"}[5m]) * 8", "legendFormat": "out {{interface}}", "refId": "A" } ]
+    },
+    {
+      "type": "timeseries", "title": "Interface Packets In (pps)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Inbound packets/s split by unicast, broadcast and multicast, per selected interface.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 99 }, "id": 44,
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_in_unicast_packets_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "unicast {{interface}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_in_broadcast_packets_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "broadcast {{interface}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_in_multicast_packets_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "multicast {{interface}}", "refId": "C" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Interface Packets Out (pps)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Outbound packets/s split by unicast, broadcast and multicast, per selected interface.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 99 }, "id": 45,
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_out_unicast_packets_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "unicast {{interface}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_out_broadcast_packets_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "broadcast {{interface}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_out_multicast_packets_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "multicast {{interface}}", "refId": "C" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Interface Errors & Discards (per second)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-second inbound/outbound errors, discards and inbound FCS errors. Sustained non-zero values indicate link or cabling problems.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 107 }, "id": 46,
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_in_errors_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "in errors {{interface}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_out_errors_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "out errors {{interface}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_in_discards_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "in discards {{interface}}", "refId": "C" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_out_discards_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "out discards {{interface}}", "refId": "D" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_in_fcs_errors_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "in FCS {{interface}}", "refId": "E" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Ethernet Frame Anomalies (per second)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-second L2 frame anomalies: CRC errors, oversize, jabber and fragment frames — physical-layer / duplex problems.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 107 }, "id": 47,
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_in_crc_errors_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "crc {{interface}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_in_oversize_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "oversize {{interface}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_in_jabber_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "jabber {{interface}}", "refId": "C" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_in_fragment_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "fragment {{interface}}", "refId": "D" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "Ethernet MAC Pause / Control / 802.1q Frames (per second)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-second MAC pause frames, MAC control frames and 802.1q (VLAN-tagged) frames, inbound and outbound. Rising pause frames signal flow-control back-pressure.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 115 }, "id": 48,
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_in_mac_pause_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "in pause {{interface}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_out_mac_pause_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "out pause {{interface}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_in_mac_control_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "in ctrl {{interface}}", "refId": "C" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_out_mac_control_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "out ctrl {{interface}}", "refId": "D" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_in_8021q_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "in 802.1q {{interface}}", "refId": "E" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_interface_ethernet_out_8021q_frames_total{target=~\"$target\", interface=~\"$interface\"}[5m])", "legendFormat": "out 802.1q {{interface}}", "refId": "F" }
+      ]
+    },
+    {
+      "type": "table", "title": "Ethernet / Link Details",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-interface link details joined from multiple metrics: configured/negotiated speed & duplex, MAC address, LAG membership, auto-negotiation, RX/TX flow-control, admin state and MTU.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 123 }, "id": 49,
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [
+        { "matcher": { "id": "byName", "options": "Auto-Neg" }, "properties": [
+          { "id": "mappings", "value": [ { "type": "value", "options": { "1": { "text": "Yes", "color": "green" }, "0": { "text": "No", "color": "red" } } } ] },
+          { "id": "custom.cellOptions", "value": { "type": "color-text" } } ] },
+        { "matcher": { "id": "byName", "options": "Flow Ctrl RX" }, "properties": [
+          { "id": "mappings", "value": [ { "type": "value", "options": { "1": { "text": "On", "color": "green" }, "0": { "text": "Off", "color": "text" } } } ] },
+          { "id": "custom.cellOptions", "value": { "type": "color-text" } } ] },
+        { "matcher": { "id": "byName", "options": "Flow Ctrl TX" }, "properties": [
+          { "id": "mappings", "value": [ { "type": "value", "options": { "1": { "text": "On", "color": "green" }, "0": { "text": "Off", "color": "text" } } } ] },
+          { "id": "custom.cellOptions", "value": { "type": "color-text" } } ] },
+        { "matcher": { "id": "byName", "options": "Admin Enabled" }, "properties": [
+          { "id": "mappings", "value": [ { "type": "value", "options": { "1": { "text": "Enabled", "color": "green" }, "0": { "text": "Disabled", "color": "red" } } } ] },
+          { "id": "custom.cellOptions", "value": { "type": "color-text" } } ] },
+        { "matcher": { "id": "byName", "options": "MTU" }, "properties": [ { "id": "unit", "value": "bytes" } ] }
+      ] },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_interface_ethernet_info{target=~\"$target\", interface=~\"$interface\"}", "format": "table", "instant": true, "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_interface_ethernet_auto_negotiate{target=~\"$target\", interface=~\"$interface\"}", "format": "table", "instant": true, "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_interface_ethernet_flow_control_rx{target=~\"$target\", interface=~\"$interface\"}", "format": "table", "instant": true, "refId": "C" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_interface_ethernet_flow_control_tx{target=~\"$target\", interface=~\"$interface\"}", "format": "table", "instant": true, "refId": "D" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_interface_enabled{target=~\"$target\", interface=~\"$interface\"}", "format": "table", "instant": true, "refId": "E" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_interface_mtu_bytes{target=~\"$target\", interface=~\"$interface\"}", "format": "table", "instant": true, "refId": "F" }
+      ],
+      "transformations": [
+        { "id": "joinByField", "options": { "byField": "interface", "mode": "outer" } },
+        { "id": "organize", "options": {
+          "excludeByName": {
+            "Time 1": true, "Time 2": true, "Time 3": true, "Time 4": true, "Time 5": true, "Time 6": true,
+            "__name__ 1": true, "__name__ 2": true, "__name__ 3": true, "__name__ 4": true, "__name__ 5": true, "__name__ 6": true,
+            "job 1": true, "job 2": true, "job 3": true, "job 4": true, "job 5": true, "job 6": true,
+            "instance 1": true, "instance 2": true, "instance 3": true, "instance 4": true, "instance 5": true, "instance 6": true,
+            "cluster 1": true, "cluster 2": true, "cluster 3": true, "cluster 4": true, "cluster 5": true, "cluster 6": true,
+            "cluster": true,
+            "target 1": true, "target 2": true, "target 3": true, "target 4": true, "target 5": true, "target 6": true,
+            "Value #A": true
+          },
+          "indexByName": {},
+          "renameByName": {
+            "interface": "Interface",
+            "target": "Target",
+            "port_speed": "Port Speed",
+            "negotiated_port_speed": "Negotiated Speed",
+            "duplex_mode": "Duplex",
+            "negotiated_duplex_mode": "Negotiated Duplex",
+            "hw_mac_address": "MAC",
+            "aggregate_id": "LAG",
+            "Value #B": "Auto-Neg",
+            "Value #C": "Flow Ctrl RX",
+            "Value #D": "Flow Ctrl TX",
+            "Value #E": "Admin Enabled",
+            "Value #F": "MTU"
+          }
+        } }
+      ]
+    },
+
+    { "type": "row", "title": "LACP", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 131 }, "id": 50, "panels": [] },
+    {
+      "type": "table", "title": "LACP Members",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "LACP member ports per LAG with activity, timeout and synchronization state. Sync colored green (IN_SYNC) / red (OUT_OF_SYNC).",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 132 }, "id": 51,
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [
+        { "matcher": { "id": "byName", "options": "Sync" }, "properties": [
+          { "id": "mappings", "value": [ { "type": "value", "options": {
+            "IN_SYNC": { "color": "green", "index": 0 }, "OUT_OF_SYNC": { "color": "red", "index": 1 } } } ] },
+          { "id": "custom.cellOptions", "value": { "type": "color-text" } } ] },
+        { "matcher": { "id": "byName", "options": "Value" }, "properties": [ { "id": "custom.hidden", "value": true } ] } ] },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_lacp_member_info{target=~\"$target\"}", "format": "table", "instant": true, "refId": "A" } ],
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        { "id": "organize", "options": {
+          "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "cluster": true, "system_id": true, "partner_id": true },
+          "renameByName": { "target": "Target", "lag_name": "LAG", "interface": "Member", "activity": "Activity", "timeout": "Timeout", "synchronization": "Sync" } } }
+      ]
+    },
+    {
+      "type": "stat", "title": "LACP Member States (Sync / Collecting / Distributing / Aggregatable)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Boolean LACP member states shown as UP (1, green) / DOWN (0, red): synchronization, collecting, distributing and aggregatable. Any DOWN means the member is not fully bundled.",
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 139 }, "id": 52,
+      "fieldConfig": { "defaults": { "unit": "short", "mappings": [
+        { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "textMode": "value_and_name" },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_lacp_member_in_sync{target=~\"$target\"}", "legendFormat": "sync {{lag_name}}/{{interface}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_lacp_member_collecting{target=~\"$target\"}", "legendFormat": "coll {{lag_name}}/{{interface}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_lacp_member_distributing{target=~\"$target\"}", "legendFormat": "dist {{lag_name}}/{{interface}}", "refId": "C" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "bigip_f5os_lacp_member_aggregatable{target=~\"$target\"}", "legendFormat": "aggr {{lag_name}}/{{interface}}", "refId": "D" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "LACP PDUs (per second)",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Per-second LACP PDU rates (in / out) and RX errors per member, from rate() of the cumulative counters. A stalled in/out rate suggests LACP is not exchanging PDUs.",
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 139 }, "id": 53,
+      "fieldConfig": { "defaults": { "unit": "pps", "custom": { "drawStyle": "line", "fillOpacity": 5 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_lacp_in_packets_total{target=~\"$target\"}[5m])", "legendFormat": "in {{lag_name}}/{{interface}}", "refId": "A" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_lacp_out_packets_total{target=~\"$target\"}[5m])", "legendFormat": "out {{lag_name}}/{{interface}}", "refId": "B" },
+        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "expr": "rate(bigip_f5os_lacp_rx_errors_total{target=~\"$target\"}[5m])", "legendFormat": "rx errors {{lag_name}}/{{interface}}", "refId": "C" }
+      ]
+    }
+  ]
+}

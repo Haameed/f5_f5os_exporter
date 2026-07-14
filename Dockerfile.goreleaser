@@ -1,0 +1,14 @@
+FROM gcr.io/distroless/static-debian12:nonroot
+
+LABEL org.opencontainers.image.title="f5_f5os_exporter" \
+      org.opencontainers.image.description="Prometheus exporter for F5 BIG-IP f5os devices" \
+      org.opencontainers.image.source="https://github.com/Haameed/f5_f5os_exporter" \
+      org.opencontainers.image.licenses="MIT"
+
+COPY f5_f5os_exporter /bin/f5_f5os_exporter
+
+EXPOSE 11001
+USER nonroot:nonroot
+
+ENTRYPOINT ["/bin/f5_f5os_exporter"]
+CMD ["-config", "/etc/f5_f5os_exporter/config.yaml"]

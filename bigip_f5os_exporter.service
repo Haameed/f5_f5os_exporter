@@ -1,0 +1,30 @@
+[Unit]
+Description=Prometheus BIG-IP F5os Exporter
+Documentation=https://github.com/Haameed/f5_f5os_exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=f5_f5os_exporter
+Group=f5_f5os_exporter
+ExecStart=/usr/local/bin/f5_f5os_exporter \
+    -config /etc/f5_f5os_exporter/config.yaml \
+    -listen :11001 \
+    -scrape-timeout 30
+Restart=on-failure
+RestartSec=5s
+
+# --- Hardening ---
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+ReadOnlyPaths=/etc/f5_f5os_exporter
+
+[Install]
+WantedBy=multi-user.target
