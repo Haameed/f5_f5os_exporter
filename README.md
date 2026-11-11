@@ -1,7 +1,11 @@
 # F5OS Exporter
 
+[![CI](https://github.com/Haameed/f5_f5os_exporter/actions/workflows/ci.yml/badge.svg)](https://github.com/Haameed/f5_f5os_exporter/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Haameed/f5_f5os_exporter?sort=semver)](https://github.com/Haameed/f5_f5os_exporter/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Haameed/f5_f5os_exporter)](https://goreportcard.com/report/github.com/Haameed/f5_f5os_exporter)
 [![Go Reference](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Exporter-E6522C?logo=prometheus&logoColor=white)](https://prometheus.io/)
+[![Docker Image](https://img.shields.io/badge/ghcr.io-f5__f5os__exporter-blue?logo=docker&logoColor=white)](https://github.com/Haameed/f5_f5os_exporter/pkgs/container/f5_f5os_exporter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
@@ -14,6 +18,7 @@ It follows the standard [multi-target exporter pattern](https://prometheus.io/do
 ## Table of Contents
 
 - [Features](#features)
+- [Compatibility](#compatibility)
 - [How It Works](#how-it-works)
 - [Metrics](#metrics)
 - [Installation](#installation)
@@ -22,10 +27,12 @@ It follows the standard [multi-target exporter pattern](https://prometheus.io/do
 - [Running the Exporter](#running-the-exporter)
 - [Prometheus Configuration](#prometheus-configuration)
 - [HTTP Endpoints](#http-endpoints)
-- [Grafana Dashboard](#grafana-dashboard)
 - [Security Considerations](#security-considerations)
+- [Performance & Token Caching](#performance--token-caching)
 - [Development](#development)
 - [Contributing](#contributing)
+- [Alerting](#alerting)
+- [Grafana Dashboard](#grafana-dashboard)
 - [License](#license)
 
 ---
@@ -46,6 +53,21 @@ It follows the standard [multi-target exporter pattern](https://prometheus.io/do
 - 🩺 Built-in `probe_success` and `probe_duration_seconds` metrics per scrape.
 - 🧩 **Graceful degradation** — subsystems that are unavailable on a given platform are logged and skipped rather than failing the whole probe.
 - 🔢 **Correct metric types** — cumulative I/O and packet counters are exposed as Prometheus counters so `rate()` works as expected.
+
+---
+
+## Compatibility
+
+| Component | Supported / Tested |
+|---|---|
+| **F5OS** | rSeries and VELOS platforms exposing the OpenConfig-based F5OS REST API used by the collectors. Hardware-only metrics (fans, PSU, temperature sensors) are automatically omitted on platforms that don't report them, without failing the scrape. |
+| **Go** | 1.25+ (see [`go.mod`](go.mod)) |
+| **OS / Arch (exporter binary & image)** | Linux, macOS, Windows — `amd64` and `arm64` (built via [GoReleaser](.goreleaser.yaml) on every tagged release) |
+| **Prometheus** | Any version supporting the [multi-target `/probe` exporter pattern](https://prometheus.io/docs/guides/multi-target-exporter/) (relabeling-based scrape config) |
+
+> Running against an untested F5OS version? Please [open an
+> issue](https://github.com/Haameed/f5_f5os_exporter/issues) with your
+> version and any errors you see — reports help grow this table.
 
 ---
 
@@ -424,23 +446,6 @@ scrape_configs:
 
 ---
 
-## Grafana Dashboard
-
-A ready-to-import Grafana dashboard is provided in [`dashboards/bigip_f5os_dashboard.json`](dashboards/bigip_f5os_dashboard.json).
-
-It is organized into collapsible rows — **Device**, **Compute**, **Disks**, **Hardware**, **Interfaces**, and **LACP** — and includes:
-
-- A platform-info table (with color-coded TPM integrity status) and a license summary with service-check-age thresholds.
-- CPU / memory / per-thread utilization panels.
-- Disk IOPS, throughput, average latency (seconds/op) and merged-I/O panels.
-- Temperature, fan, and PSU (voltage / current / temperature / fan) panels.
-- Interface throughput, packet-rate, error/discard, and L2 frame-anomaly panels, plus a joined "Ethernet / Link Details" table.
-- LACP member-state and PDU-rate panels.
-
-The dashboard uses `target` and `interface` template variables and expects a Prometheus datasource containing metrics prefixed `bigip_f5os_`.
-
----
-
 ## Security Considerations
 
 - **Credentials at rest** — the config file contains plaintext credentials. Restrict its permissions (`chmod 600`) and consider mounting it as a read-only secret in containerized environments.
@@ -448,6 +453,24 @@ The dashboard uses `target` and `interface` template variables and expects a Pro
 - **TLS verification** — `-insecure` disables certificate validation. Prefer trusting the F5OS CA and leaving verification enabled in production.
 - **Network exposure** — the `/probe` endpoint accepts arbitrary `target` values that match the config map. Keep the exporter on a trusted management network.
 - **Sensitive labels** — the exporter deliberately omits sensitive license fields (appliance serial number, registration key) from exported metrics.
+
+---
+
+## Performance & Token Caching
+
+To minimize load on your F5OS devices, the exporter **caches authentication
+tokens per target** and reuses them until shortly before they expire (a small
+safety margin is applied so scrapes never fail on a token that expires
+mid-request).
+
+This means:
+
+- A login only happens on the **first** scrape of a target, and then again
+  **after the token expires** — not on every scrape.
+- When many scrapes arrive for the same target at once, only **one** login is
+  performed; the others wait for and share the result.
+
+No configuration is required — caching is automatic.
 
 ---
 
@@ -505,6 +528,37 @@ A complete set of recommended alerts (for both Prometheus and Grafana) is
 documented in [`alerts/README.md`](alerts/README.md), covering availability,
 system load (CPU / memory), storage latency, hardware sensors (temperature /
 fans / PSU), TPM integrity, interfaces, LACP, and license service-check age.
+
+---
+
+## Grafana Dashboard
+
+A ready-to-import dashboard covering every metric family exposed by the
+exporter — Platform Info, Compute (CPU/Memory), Storage/Disks, Hardware
+(Temperature/Fans/PSU), Interfaces, LACP, and License — is provided at
+[`grafana/bigip_f5os_dashboard.json`](grafana/bigip_f5os_dashboard.json).
+
+It is organized into collapsible rows — **Device**, **Compute**, **Disks**,
+**Hardware**, **Interfaces**, and **LACP** — and includes:
+
+- A platform-info table (with color-coded TPM integrity status) and a license summary with service-check-age thresholds.
+- CPU / memory / per-thread utilization panels.
+- Disk IOPS, throughput, average latency (seconds/op) and merged-I/O panels.
+- Temperature, fan, and PSU (voltage / current / temperature / fan) panels.
+- Interface throughput, packet-rate, error/discard, and L2 frame-anomaly panels, plus a joined "Ethernet / Link Details" table.
+- LACP member-state and PDU-rate panels.
+
+The dashboard uses `target` and `interface` template variables and expects a
+Prometheus datasource containing metrics prefixed `bigip_f5os_`.
+
+**To import it:**
+
+1. In Grafana, go to **Dashboards → New → Import**.
+2. Upload `grafana/bigip_f5os_dashboard.json` (or paste its contents).
+3. Select your Prometheus data source when prompted (the `DS_PROMETHEUS`
+   variable).
+4. Pick a target from the `target` dropdown at the top of the dashboard to
+   filter all panels to that F5OS device.
 
 ---
 
