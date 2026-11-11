@@ -41,7 +41,7 @@ groups:
   - name: f5_f5os
     rules:
       - alert: F5osCpuHigh
-        expr: bigip_f5os_cpu_utilization_1min_avg_percent > 85
+        expr: bigip_f5os_cpu_utilization_1min_avg_ratio > 0.85
         for: 5m
         labels:
           severity: warning
@@ -74,14 +74,14 @@ up{job="f5os"} == 0
 
 ### CPU High — `warning`
 ```promql
-bigip_f5os_cpu_utilization_1min_avg_percent > 85
+bigip_f5os_cpu_utilization_1min_avg_ratio > 0.85
 ```
 **For:** `5m`
 **Description:** `1-minute average CPU utilization on {{ $labels.target }} is above 85%.`
 
 ### Memory High — `critical`
 ```promql
-bigip_f5os_Memory_used_percent > 90
+bigip_f5os_memory_used_ratio > 0.90
 ```
 **For:** `5m`
 **Description:** `Memory usage on {{ $labels.target }} is above 90%.`
@@ -91,25 +91,26 @@ bigip_f5os_Memory_used_percent > 90
 ## Storage / Disks
 
 > Disk I/O metrics are cumulative counters. Latency is derived as
-> `rate(latency-ms) / rate(iops)` to yield **average milliseconds per
-> operation** — a volume-independent value that stays meaningful under any load.
+> `rate(latency-seconds counter) / rate(operations counter)` to yield **average
+> seconds per operation** — a volume-independent value that stays meaningful
+> under any load.
 
 ### Disk Write Latency High — `warning`
 ```promql
-rate(bigip_f5os_storage_disk_write_latency_ms[5m])
+rate(bigip_f5os_storage_disk_write_latency_seconds_total[5m])
 /
-clamp_min(rate(bigip_f5os_storage_disk_write_iops[5m]), 1)
-> 50
+clamp_min(rate(bigip_f5os_storage_disk_write_operations_total[5m]), 1)
+> 0.05
 ```
 **For:** `5m`
 **Description:** `Disk {{ $labels.disk_name }} on {{ $labels.target }} write latency is above 50ms per operation.`
 
 ### Disk Read Latency High — `warning`
 ```promql
-rate(bigip_f5os_storage_disk_read_latency_ms[5m])
+rate(bigip_f5os_storage_disk_read_latency_seconds_total[5m])
 /
-clamp_min(rate(bigip_f5os_storage_disk_read_iops[5m]), 1)
-> 50
+clamp_min(rate(bigip_f5os_storage_disk_read_operations_total[5m]), 1)
+> 0.05
 ```
 **For:** `5m`
 **Description:** `Disk {{ $labels.disk_name }} on {{ $labels.target }} read latency is above 50ms per operation.`
@@ -154,7 +155,7 @@ bigip_f5os_psu_fan_1_speed_rpm < 1000
 > The r10800 PSU nominal output is ~12V; a drop below 11V catches a real fault
 > or a removed/failed supply.
 ```promql
-bigip_f5os_psu_voltage_out_volt < 11
+bigip_f5os_psu_voltage_out_volts < 11
 ```
 **For:** `2m`
 **Description:** `PSU {{ $labels.psu_name }} on {{ $labels.target }} output voltage has dropped below 11V.`
@@ -175,13 +176,13 @@ max by (target, psu_name) (
 ## Security (TPM)
 
 ### TPM Integrity Not Valid — `critical`
-> The `tmp_status` label carries the TPM integrity state. Anything other than
+> The `tpm_status` label carries the TPM integrity state. Anything other than
 > `Valid` indicates a platform-integrity concern.
 ```promql
-bigip_f5os_info{tmp_status!="Valid"}
+bigip_f5os_info{tpm_status!="Valid"}
 ```
 **For:** `5m`
-**Description:** `TPM integrity status on {{ $labels.target }} is '{{ $labels.tmp_status }}' (expected 'Valid').`
+**Description:** `TPM integrity status on {{ $labels.target }} is '{{ $labels.tpm_status }}' (expected 'Valid').`
 
 ---
 

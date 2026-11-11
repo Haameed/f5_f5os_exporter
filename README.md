@@ -37,7 +37,7 @@ It follows the standard [multi-target exporter pattern](https://prometheus.io/do
 - 🔑 **Token-based authentication** — authenticates against the F5OS REST API; credentials never appear in URLs.
 - 📊 **Rich metric coverage**:
   - **Platform / Hardware** — CPU cores/threads/frequency/cache, per-thread CPU utilization (current + 5s/1m/5m averages), platform memory (total/used/free/available), platform temperature (current/avg/min/max), chassis fan speeds, PSU voltage/current/temperature/fan, and a platform-info metric including TPM integrity status.
-  - **Storage / Disks** — per-disk inventory (model, serial, type, size) and cumulative I/O counters (IOPS, bytes, latency-ms, merged) for every installed disk.
+  - **Storage / Disks** — per-disk inventory (model, serial, type, size) and cumulative I/O counters (operations, bytes, latency-seconds, merged) for every installed disk.
   - **Interfaces** — operational/admin state, MTU, FEC mode, LACP state, in/out octets, unicast/broadcast/multicast packets, discards, errors, FCS errors, plus L2 ethernet counters (CRC, oversize, jabber, fragment, MAC pause/control, 802.1q), speed/duplex negotiation, MAC address, LAG membership, auto-negotiation and flow-control state.
   - **LACP** — per-LAG member state (in-sync, collecting, distributing, aggregatable) and LACP PDU counters (in/out packets, RX errors), enriched with activity/timeout/system-id/partner-id labels.
   - **License** — licensed version, platform ID, licensed date and service-check date (as Unix timestamps for age-based alerting).
@@ -77,7 +77,17 @@ On each `/probe` request:
 
 ## Metrics
 
-All metrics are prefixed with `bigip_f5os_` and carry a `target` label.
+All metrics are prefixed with `bigip_f5os_` and carry a `target` label, and
+follow the [Prometheus metric and label naming
+conventions](https://prometheus.io/docs/practices/naming/) (base units,
+`_total` for counters, `_ratio` for 0–1 fractions, `snake_case` names and
+labels throughout).
+
+> **Upgrading from < v1.0.0?** Several metric names and a handful of metric
+> *values* (CPU/memory percentages, disk/cache sizes, disk latency) changed
+> in v1.0.0 to comply with these conventions. See the
+> [CHANGELOG](CHANGELOG.md#100) before upgrading — your dashboards and
+> alert rules will need updating.
 
 ### Probe (per scrape)
 
@@ -90,23 +100,23 @@ All metrics are prefixed with `bigip_f5os_` and carry a `target` label.
 
 Constant `1`; platform metadata carried in labels.
 
-Labels: `target`, `description`, `tmp_status`.
+Labels: `target`, `description`, `tpm_status`.
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `bigip_f5os_info` | gauge | Platform identity + TPM integrity status (`tmp_status`, e.g. `Valid`) |
+| `bigip_f5os_info` | gauge | Platform identity + TPM integrity status (`tpm_status`, e.g. `Valid`) |
 
-### Memory (`bigip_f5os_Memory_*`)
+### Memory (`bigip_f5os_memory_*`)
 
 Label: `target`.
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `bigip_f5os_Memory_available_bytes` | gauge | Memory available for allocation (bytes) |
-| `bigip_f5os_Memory_free_bytes` | gauge | Free (unused) memory (bytes) |
-| `bigip_f5os_Memory_used_percent` | gauge | Memory used (%) |
-| `bigip_f5os_Memory_platform_used_bytes` | gauge | Platform memory used (bytes) |
-| `bigip_f5os_Memory_platform_total_bytes` | gauge | Platform memory total (bytes) |
+| `bigip_f5os_memory_available_bytes` | gauge | Memory available for allocation (bytes) |
+| `bigip_f5os_memory_free_bytes` | gauge | Free (unused) memory (bytes) |
+| `bigip_f5os_memory_used_ratio` | gauge | Memory used ratio (0-1) |
+| `bigip_f5os_memory_platform_used_bytes` | gauge | Platform memory used (bytes) |
+| `bigip_f5os_memory_platform_total_bytes` | gauge | Platform memory total (bytes) |
 
 ### CPU (`bigip_f5os_cpu_*`)
 
@@ -117,15 +127,15 @@ Labels: `target` (thread metrics add `thread_index`, `thread_name`).
 | `bigip_f5os_cpu_count` | gauge | Physical CPU core count |
 | `bigip_f5os_cpu_thread_count` | gauge | Logical CPU thread count |
 | `bigip_f5os_cpu_frequency_hz` | gauge | Rated CPU frequency (Hz) |
-| `bigip_f5os_cpu_cache_size_kb` | gauge | CPU cache size (KiB) |
-| `bigip_f5os_cpu_utilization_percent` | gauge | Overall CPU utilization (current) |
-| `bigip_f5os_cpu_utilization_5sec_avg_percent` | gauge | Overall CPU utilization (5s avg) |
-| `bigip_f5os_cpu_utilization_1min_avg_percent` | gauge | Overall CPU utilization (1m avg) |
-| `bigip_f5os_cpu_utilization_5min_avg_percent` | gauge | Overall CPU utilization (5m avg) |
-| `bigip_f5os_cpu_thread_utilization_percent` | gauge | Per-thread utilization (current) |
-| `bigip_f5os_cpu_thread_utilization_5sec_avg_percent` | gauge | Per-thread utilization (5s avg) |
-| `bigip_f5os_cpu_thread_utilization_1min_avg_percent` | gauge | Per-thread utilization (1m avg) |
-| `bigip_f5os_cpu_thread_utilization_5min_avg_percent` | gauge | Per-thread utilization (5m avg) |
+| `bigip_f5os_cpu_cache_size_bytes` | gauge | CPU cache size (bytes) |
+| `bigip_f5os_cpu_utilization_ratio` | gauge | Overall CPU utilization ratio, 0-1 (current) |
+| `bigip_f5os_cpu_utilization_5sec_avg_ratio` | gauge | Overall CPU utilization ratio, 0-1 (5s avg) |
+| `bigip_f5os_cpu_utilization_1min_avg_ratio` | gauge | Overall CPU utilization ratio, 0-1 (1m avg) |
+| `bigip_f5os_cpu_utilization_5min_avg_ratio` | gauge | Overall CPU utilization ratio, 0-1 (5m avg) |
+| `bigip_f5os_cpu_thread_utilization_ratio` | gauge | Per-thread utilization ratio, 0-1 (current) |
+| `bigip_f5os_cpu_thread_utilization_5sec_avg_ratio` | gauge | Per-thread utilization ratio, 0-1 (5s avg) |
+| `bigip_f5os_cpu_thread_utilization_1min_avg_ratio` | gauge | Per-thread utilization ratio, 0-1 (1m avg) |
+| `bigip_f5os_cpu_thread_utilization_5min_avg_ratio` | gauge | Per-thread utilization ratio, 0-1 (5m avg) |
 
 ### Temperature (`bigip_f5os_temperature_*`)
 
@@ -144,16 +154,16 @@ Labels: `target`, `disk_name` (inventory adds `model`, `serial`, `type`).
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `bigip_f5os_storage_disk_size_gb` | gauge | Disk capacity (GB); metadata in labels |
-| `bigip_f5os_storage_disk_total_iops` | counter | Cumulative total IOPS |
-| `bigip_f5os_storage_disk_read_iops` | counter | Cumulative read IOPS |
-| `bigip_f5os_storage_disk_write_iops` | counter | Cumulative write IOPS |
-| `bigip_f5os_storage_disk_read_bytes` | counter | Cumulative bytes read |
-| `bigip_f5os_storage_disk_write_bytes` | counter | Cumulative bytes written |
-| `bigip_f5os_storage_disk_read_latency_ms` | counter | Cumulative read latency (ms) |
-| `bigip_f5os_storage_disk_write_latency_ms` | counter | Cumulative write latency (ms) |
-| `bigip_f5os_storage_disk_read_merged` | counter | Cumulative merged read requests |
-| `bigip_f5os_storage_disk_write_merged` | counter | Cumulative merged write requests |
+| `bigip_f5os_storage_disk_size_bytes` | gauge | Disk capacity (bytes); metadata in labels |
+| `bigip_f5os_storage_disk_operations_total` | counter | Cumulative total disk operations |
+| `bigip_f5os_storage_disk_read_operations_total` | counter | Cumulative disk read operations |
+| `bigip_f5os_storage_disk_write_operations_total` | counter | Cumulative disk write operations |
+| `bigip_f5os_storage_disk_read_bytes_total` | counter | Cumulative bytes read |
+| `bigip_f5os_storage_disk_write_bytes_total` | counter | Cumulative bytes written |
+| `bigip_f5os_storage_disk_read_latency_seconds_total` | counter | Cumulative read latency (seconds) |
+| `bigip_f5os_storage_disk_write_latency_seconds_total` | counter | Cumulative write latency (seconds) |
+| `bigip_f5os_storage_disk_read_merged_total` | counter | Cumulative merged read requests |
+| `bigip_f5os_storage_disk_write_merged_total` | counter | Cumulative merged write requests |
 
 ### Fans (`bigip_f5os_fan_speed_rpm`)
 
@@ -169,10 +179,10 @@ Labels: `target`, `psu_name`.
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `bigip_f5os_psu_current_in_amp` | gauge | PSU input current (A) |
-| `bigip_f5os_psu_current_out_amp` | gauge | PSU output current (A) |
-| `bigip_f5os_psu_voltage_in_volt` | gauge | PSU input voltage (V) |
-| `bigip_f5os_psu_voltage_out_volt` | gauge | PSU output voltage (V) |
+| `bigip_f5os_psu_current_in_amperes` | gauge | PSU input current (A) |
+| `bigip_f5os_psu_current_out_amperes` | gauge | PSU output current (A) |
+| `bigip_f5os_psu_voltage_in_volts` | gauge | PSU input voltage (V) |
+| `bigip_f5os_psu_voltage_out_volts` | gauge | PSU output voltage (V) |
 | `bigip_f5os_psu_temperature_1_celsius` | gauge | PSU temperature sensor 1 (°C) |
 | `bigip_f5os_psu_temperature_2_celsius` | gauge | PSU temperature sensor 2 (°C) |
 | `bigip_f5os_psu_temperature_3_celsius` | gauge | PSU temperature sensor 3 (°C) |
@@ -252,9 +262,9 @@ Labels: `target` (info metric adds `licensed_version`, `platform_id`).
 #### Useful queries
 
 ```promql
-# Disk average write latency (ms per operation)
-rate(bigip_f5os_storage_disk_write_latency_ms[5m])
-  / clamp_min(rate(bigip_f5os_storage_disk_write_iops[5m]), 1)
+# Disk average write latency (seconds per operation)
+rate(bigip_f5os_storage_disk_write_latency_seconds_total[5m])
+  / clamp_min(rate(bigip_f5os_storage_disk_write_operations_total[5m]), 1)
 
 # Interface inbound throughput (bits/s)
 rate(bigip_f5os_interface_in_octets_total[5m]) * 8
@@ -422,7 +432,7 @@ It is organized into collapsible rows — **Device**, **Compute**, **Disks**, **
 
 - A platform-info table (with color-coded TPM integrity status) and a license summary with service-check-age thresholds.
 - CPU / memory / per-thread utilization panels.
-- Disk IOPS, throughput, average latency (ms/op) and merged-I/O panels.
+- Disk IOPS, throughput, average latency (seconds/op) and merged-I/O panels.
 - Temperature, fan, and PSU (voltage / current / temperature / fan) panels.
 - Interface throughput, packet-rate, error/discard, and L2 frame-anomaly panels, plus a joined "Ethernet / Link Details" table.
 - LACP member-state and PDU-rate panels.

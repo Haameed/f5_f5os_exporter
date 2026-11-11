@@ -207,27 +207,27 @@ func GetHardwareProbe(c http.BigIPHTTP, target string) ([]prometheus.Metric, boo
 			[]string{"target", "description", "tpm_status"}, nil,
 		)
 		memoryAvailable = prometheus.NewDesc(
-			"bigip_f5os_Memory_available_bytes",
+			"bigip_f5os_memory_available_bytes",
 			"BigIP F5OS memory available in bytes",
 			[]string{"target"}, nil,
 		)
 		memoryfree = prometheus.NewDesc(
-			"bigip_f5os_Memory_free_bytes",
+			"bigip_f5os_memory_free_bytes",
 			"BigIP F5OS memory free in bytes",
 			[]string{"target"}, nil,
 		)
-		memoryUsedPercent = prometheus.NewDesc(
-			"bigip_f5os_Memory_used_percent",
-			"BigIP F5OS memory used percent",
+		memoryUsedRatio = prometheus.NewDesc(
+			"bigip_f5os_memory_used_ratio",
+			"BigIP F5OS memory used ratio (0-1)",
 			[]string{"target"}, nil,
 		)
 		memoryPlatformUsed = prometheus.NewDesc(
-			"bigip_f5os_Memory_platform_used_bytes",
+			"bigip_f5os_memory_platform_used_bytes",
 			"BigIP F5OS memory platform used in bytes",
 			[]string{"target"}, nil,
 		)
 		memoryPlatformTotal = prometheus.NewDesc(
-			"bigip_f5os_Memory_platform_total_bytes",
+			"bigip_f5os_memory_platform_total_bytes",
 			"BigIP F5OS memory platform total in bytes",
 			[]string{"target"}, nil,
 		)
@@ -251,54 +251,60 @@ func GetHardwareProbe(c http.BigIPHTTP, target string) ([]prometheus.Metric, boo
 			"BigIP F5OS temperature maximum celsius",
 			[]string{"target"}, nil,
 		)
-		storageDiskSizeGB = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_size_gb",
-			"BigIP F5OS storage disk size in GB",
+		storageDiskSizeBytes = prometheus.NewDesc(
+			"bigip_f5os_storage_disk_size_bytes",
+			"BigIP F5OS storage disk size in bytes",
 			[]string{"target", "disk_name", "model", "serial", "type"}, nil,
 		)
+		// Note: these disk I/O metrics (IOPS, latency, merged-request counts)
+		// are reported by F5OS as cumulative counters, not instantaneous
+		// rates, despite the field names (see alerts/README.md). They keep
+		// CounterValue/_total and are renamed to drop the misleading
+		// rate-style units (_iops, _ms) in favor of _operations_total /
+		// _latency_seconds_total.
 		storageDiskTotalIOPS = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_total_iops",
-			"BigIP F5OS storage disk total IOPS",
+			"bigip_f5os_storage_disk_operations_total",
+			"BigIP F5OS cumulative total disk operations",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageDiskReadIOPS = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_read_iops",
-			"BigIP F5OS storage disk read IOPS",
+			"bigip_f5os_storage_disk_read_operations_total",
+			"BigIP F5OS cumulative disk read operations",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageDiskWriteIOPS = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_write_iops",
-			"BigIP F5OS storage disk write IOPS",
+			"bigip_f5os_storage_disk_write_operations_total",
+			"BigIP F5OS cumulative disk write operations",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageReadMerged = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_read_merged",
-			"BigIP F5OS storage disk read merged",
+			"bigip_f5os_storage_disk_read_merged_total",
+			"BigIP F5OS cumulative merged disk read requests",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageWriteMerged = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_write_merged",
-			"BigIP F5OS storage disk write merged",
+			"bigip_f5os_storage_disk_write_merged_total",
+			"BigIP F5OS cumulative merged disk write requests",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageReadBytes = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_read_bytes",
-			"BigIP F5OS storage disk read bytes",
+			"bigip_f5os_storage_disk_read_bytes_total",
+			"BigIP F5OS cumulative disk bytes read",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageWriteBytes = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_write_bytes",
-			"BigIP F5OS storage disk write bytes",
+			"bigip_f5os_storage_disk_write_bytes_total",
+			"BigIP F5OS cumulative disk bytes written",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageReadLatency = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_read_latency_ms",
-			"BigIP F5OS storage disk read latency in ms",
+			"bigip_f5os_storage_disk_read_latency_seconds_total",
+			"BigIP F5OS cumulative disk read latency, in seconds",
 			[]string{"target", "disk_name"}, nil,
 		)
 		storageWriteLatency = prometheus.NewDesc(
-			"bigip_f5os_storage_disk_write_latency_ms",
-			"BigIP F5OS storage disk write latency in ms",
+			"bigip_f5os_storage_disk_write_latency_seconds_total",
+			"BigIP F5OS cumulative disk write latency, in seconds",
 			[]string{"target", "disk_name"}, nil,
 		)
 		cpuCnt = prometheus.NewDesc(
@@ -317,48 +323,48 @@ func GetHardwareProbe(c http.BigIPHTTP, target string) ([]prometheus.Metric, boo
 			[]string{"target"}, nil,
 		)
 		cpuCacheSize = prometheus.NewDesc(
-			"bigip_f5os_cpu_cache_size_kb",
-			"BigIP F5OS CPU cache size in KB",
+			"bigip_f5os_cpu_cache_size_bytes",
+			"BigIP F5OS CPU cache size in bytes",
 			[]string{"target"}, nil,
 		)
 		cpuUtilization = prometheus.NewDesc(
-			"bigip_f5os_cpu_utilization_percent",
-			"BigIP F5OS CPU utilization percent",
+			"bigip_f5os_cpu_utilization_ratio",
+			"BigIP F5OS CPU utilization ratio (0-1)",
 			[]string{"target"}, nil,
 		)
 		cpuUtilization5SecAvg = prometheus.NewDesc(
-			"bigip_f5os_cpu_utilization_5sec_avg_percent",
-			"BigIP F5OS CPU utilization 5 second average percent",
+			"bigip_f5os_cpu_utilization_5sec_avg_ratio",
+			"BigIP F5OS CPU utilization 5 second average ratio (0-1)",
 			[]string{"target"}, nil,
 		)
 		cpuUtilization1MinAvg = prometheus.NewDesc(
-			"bigip_f5os_cpu_utilization_1min_avg_percent",
-			"BigIP F5OS CPU utilization 1 minute average percent",
+			"bigip_f5os_cpu_utilization_1min_avg_ratio",
+			"BigIP F5OS CPU utilization 1 minute average ratio (0-1)",
 			[]string{"target"}, nil,
 		)
 		cpuUtilization5MinAvg = prometheus.NewDesc(
-			"bigip_f5os_cpu_utilization_5min_avg_percent",
-			"BigIP F5OS CPU utilization 5 minute average percent",
+			"bigip_f5os_cpu_utilization_5min_avg_ratio",
+			"BigIP F5OS CPU utilization 5 minute average ratio (0-1)",
 			[]string{"target"}, nil,
 		)
 		cpuThreadUtilizationCurrent = prometheus.NewDesc(
-			"bigip_f5os_cpu_thread_utilization_percent",
-			"BigIP F5OS CPU thread utilization percent",
+			"bigip_f5os_cpu_thread_utilization_ratio",
+			"BigIP F5OS CPU thread utilization ratio (0-1)",
 			[]string{"target", "thread_index", "thread_name"}, nil,
 		)
 		cpuThreadUtilization5SecAvg = prometheus.NewDesc(
-			"bigip_f5os_cpu_thread_utilization_5sec_avg_percent",
-			"BigIP F5OS CPU thread utilization 5 second average percent",
+			"bigip_f5os_cpu_thread_utilization_5sec_avg_ratio",
+			"BigIP F5OS CPU thread utilization 5 second average ratio (0-1)",
 			[]string{"target", "thread_index", "thread_name"}, nil,
 		)
 		cpuThreadUtilization1MinAvg = prometheus.NewDesc(
-			"bigip_f5os_cpu_thread_utilization_1min_avg_percent",
-			"BigIP F5OS CPU thread utilization 1 minute average percent",
+			"bigip_f5os_cpu_thread_utilization_1min_avg_ratio",
+			"BigIP F5OS CPU thread utilization 1 minute average ratio (0-1)",
 			[]string{"target", "thread_index", "thread_name"}, nil,
 		)
 		cpuThreadUtilization5MinAvg = prometheus.NewDesc(
-			"bigip_f5os_cpu_thread_utilization_5min_avg_percent",
-			"BigIP F5OS CPU thread utilization 5 minute average percent",
+			"bigip_f5os_cpu_thread_utilization_5min_avg_ratio",
+			"BigIP F5OS CPU thread utilization 5 minute average ratio (0-1)",
 			[]string{"target", "thread_index", "thread_name"}, nil,
 		)
 		fanSpeed = prometheus.NewDesc(
@@ -367,23 +373,23 @@ func GetHardwareProbe(c http.BigIPHTTP, target string) ([]prometheus.Metric, boo
 			[]string{"target", "fan_name"}, nil,
 		)
 		psuCurrentIn = prometheus.NewDesc(
-			"bigip_f5os_psu_current_in_amp",
-			"BigIP F5OS PSU current in",
+			"bigip_f5os_psu_current_in_amperes",
+			"BigIP F5OS PSU input current, in amperes",
 			[]string{"target", "psu_name"}, nil,
 		)
 		psuCurrentOut = prometheus.NewDesc(
-			"bigip_f5os_psu_current_out_amp",
-			"BigIP F5OS PSU current out",
+			"bigip_f5os_psu_current_out_amperes",
+			"BigIP F5OS PSU output current, in amperes",
 			[]string{"target", "psu_name"}, nil,
 		)
 		psuVoltageIn = prometheus.NewDesc(
-			"bigip_f5os_psu_voltage_in_volt",
-			"BigIP F5OS PSU voltage in",
+			"bigip_f5os_psu_voltage_in_volts",
+			"BigIP F5OS PSU input voltage, in volts",
 			[]string{"target", "psu_name"}, nil,
 		)
 		psuVoltageOut = prometheus.NewDesc(
-			"bigip_f5os_psu_voltage_out_volt",
-			"BigIP F5OS PSU voltage out",
+			"bigip_f5os_psu_voltage_out_volts",
+			"BigIP F5OS PSU output voltage, in volts",
 			[]string{"target", "psu_name"}, nil,
 		)
 		psuTemperature1 = prometheus.NewDesc(
@@ -421,7 +427,7 @@ func GetHardwareProbe(c http.BigIPHTTP, target string) ([]prometheus.Metric, boo
 			m = append(m, prometheus.MustNewConstMetric(f5osInfo, prometheus.GaugeValue, 0, target, comp.State.Description, comp.State.TPMStatus))
 			m = append(m, prometheus.MustNewConstMetric(memoryAvailable, prometheus.GaugeValue, stringToFloat(comp.State.Memory.Available), target))
 			m = append(m, prometheus.MustNewConstMetric(memoryfree, prometheus.GaugeValue, stringToFloat(comp.State.Memory.Free), target))
-			m = append(m, prometheus.MustNewConstMetric(memoryUsedPercent, prometheus.GaugeValue, float64(comp.State.Memory.UsedPercent), target))
+			m = append(m, prometheus.MustNewConstMetric(memoryUsedRatio, prometheus.GaugeValue, float64(comp.State.Memory.UsedPercent)/100, target))
 			m = append(m, prometheus.MustNewConstMetric(memoryPlatformUsed, prometheus.GaugeValue, stringToFloat(comp.State.Memory.PlatformUsed), target))
 			m = append(m, prometheus.MustNewConstMetric(memoryPlatformTotal, prometheus.GaugeValue, stringToFloat(comp.State.Memory.PlatformTotal), target))
 			m = append(m, prometheus.MustNewConstMetric(temperatureCurrent, prometheus.GaugeValue, stringToFloat(comp.State.Temperature.Current.String()), target))
@@ -429,30 +435,43 @@ func GetHardwareProbe(c http.BigIPHTTP, target string) ([]prometheus.Metric, boo
 			m = append(m, prometheus.MustNewConstMetric(temperatureMIN, prometheus.GaugeValue, stringToFloat(comp.State.Temperature.Minimum.String()), target))
 			m = append(m, prometheus.MustNewConstMetric(temperatureMAX, prometheus.GaugeValue, stringToFloat(comp.State.Temperature.Maximum.String()), target))
 			for _, disk := range comp.Storage.State.Disks.Disk {
-				m = append(m, prometheus.MustNewConstMetric(storageDiskSizeGB, prometheus.GaugeValue, stringToFloat(disk.State.Size), target, disk.DiskName, disk.State.Model, disk.State.SerialNo, disk.State.Type))
+				// disk.State.Size is reported as a string like "700.00GB";
+				// stringToFloat strips the unit suffix, so multiply by 1e9
+				// to convert decimal gigabytes to the Prometheus base unit
+				// (bytes).
+				m = append(m, prometheus.MustNewConstMetric(storageDiskSizeBytes, prometheus.GaugeValue, stringToFloat(disk.State.Size)*1e9, target, disk.DiskName, disk.State.Model, disk.State.SerialNo, disk.State.Type))
 				m = append(m, prometheus.MustNewConstMetric(storageDiskTotalIOPS, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.TotalIOPS.String()), target, disk.DiskName))
 				m = append(m, prometheus.MustNewConstMetric(storageDiskReadIOPS, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.ReadIOPS.String()), target, disk.DiskName))
 				m = append(m, prometheus.MustNewConstMetric(storageDiskWriteIOPS, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.WriteIOPS.String()), target, disk.DiskName))
 				m = append(m, prometheus.MustNewConstMetric(storageReadBytes, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.ReadBytes.String()), target, disk.DiskName))
 				m = append(m, prometheus.MustNewConstMetric(storageWriteBytes, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.WriteBytes.String()), target, disk.DiskName))
-				m = append(m, prometheus.MustNewConstMetric(storageReadLatency, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.ReadLatency.String()), target, disk.DiskName))
-				m = append(m, prometheus.MustNewConstMetric(storageWriteLatency, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.WriteLatency.String()), target, disk.DiskName))
-				m = append(m, prometheus.MustNewConstMetric(storageReadMerged, prometheus.GaugeValue, stringToFloat(string(disk.State.DiskIO.ReadMerged)), target, disk.DiskName))
-				m = append(m, prometheus.MustNewConstMetric(storageWriteMerged, prometheus.GaugeValue, stringToFloat(string(disk.State.DiskIO.WriteMerged)), target, disk.DiskName))
+				// read/write latency are reported in milliseconds; divide by
+				// 1000 to expose the Prometheus base unit (seconds).
+				m = append(m, prometheus.MustNewConstMetric(storageReadLatency, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.ReadLatency.String())/1000, target, disk.DiskName))
+				m = append(m, prometheus.MustNewConstMetric(storageWriteLatency, prometheus.CounterValue, stringToFloat(disk.State.DiskIO.WriteLatency.String())/1000, target, disk.DiskName))
+				// read-merged/write-merged are cumulative counters (see
+				// alerts/README.md); fixed from GaugeValue to CounterValue.
+				m = append(m, prometheus.MustNewConstMetric(storageReadMerged, prometheus.CounterValue, stringToFloat(string(disk.State.DiskIO.ReadMerged)), target, disk.DiskName))
+				m = append(m, prometheus.MustNewConstMetric(storageWriteMerged, prometheus.CounterValue, stringToFloat(string(disk.State.DiskIO.WriteMerged)), target, disk.DiskName))
 			}
 			m = append(m, prometheus.MustNewConstMetric(cpuCnt, prometheus.GaugeValue, stringToFloat(comp.CPU.State.Processors.Processor[0].State.CoreCnt), target))
 			m = append(m, prometheus.MustNewConstMetric(cpuThreadCnt, prometheus.GaugeValue, stringToFloat(comp.CPU.State.Processors.Processor[0].State.ThreadCnt), target))
 			m = append(m, prometheus.MustNewConstMetric(cpuFreq, prometheus.GaugeValue, stringToFloat(comp.CPU.State.Processors.Processor[0].State.Freq)*1000000, target))
-			m = append(m, prometheus.MustNewConstMetric(cpuUtilization, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.Current), target))
-			m = append(m, prometheus.MustNewConstMetric(cpuUtilization5SecAvg, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.FiveSecAvg), target))
-			m = append(m, prometheus.MustNewConstMetric(cpuUtilization1MinAvg, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.OneMinAvg), target))
-			m = append(m, prometheus.MustNewConstMetric(cpuUtilization5MinAvg, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.FiveMinAvg), target))
-			m = append(m, prometheus.MustNewConstMetric(cpuCacheSize, prometheus.GaugeValue, stringToFloat(comp.CPU.State.Processors.Processor[0].State.CacheSize), target))
+			// F5OS reports CPU utilization as a 0-100 percentage; divide by
+			// 100 to expose a true 0-1 ratio, per Prometheus naming
+			// conventions.
+			m = append(m, prometheus.MustNewConstMetric(cpuUtilization, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.Current)/100, target))
+			m = append(m, prometheus.MustNewConstMetric(cpuUtilization5SecAvg, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.FiveSecAvg)/100, target))
+			m = append(m, prometheus.MustNewConstMetric(cpuUtilization1MinAvg, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.OneMinAvg)/100, target))
+			m = append(m, prometheus.MustNewConstMetric(cpuUtilization5MinAvg, prometheus.GaugeValue, float64(comp.CPU.State.CPUUtil.FiveMinAvg)/100, target))
+			// CacheSize is reported in KiB; multiply by 1024 to expose the
+			// Prometheus base unit (bytes).
+			m = append(m, prometheus.MustNewConstMetric(cpuCacheSize, prometheus.GaugeValue, stringToFloat(comp.CPU.State.Processors.Processor[0].State.CacheSize)*1024, target))
 			for _, thread := range comp.CPU.State.CPUThreads.CPUThread {
-				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilizationCurrent, prometheus.GaugeValue, float64(thread.Current), target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
-				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilization5SecAvg, prometheus.GaugeValue, float64(thread.FiveSecAvg), target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
-				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilization1MinAvg, prometheus.GaugeValue, float64(thread.OneMinAvg), target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
-				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilization5MinAvg, prometheus.GaugeValue, float64(thread.FiveMinAvg), target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
+				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilizationCurrent, prometheus.GaugeValue, float64(thread.Current)/100, target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
+				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilization5SecAvg, prometheus.GaugeValue, float64(thread.FiveSecAvg)/100, target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
+				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilization1MinAvg, prometheus.GaugeValue, float64(thread.OneMinAvg)/100, target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
+				m = append(m, prometheus.MustNewConstMetric(cpuThreadUtilization5MinAvg, prometheus.GaugeValue, float64(thread.FiveMinAvg)/100, target, strconv.Itoa(thread.ThreadIndex), thread.Thread))
 			}
 			for fanName, fanSpeedValue := range comp.FanTray.GetFans() {
 				m = append(m, prometheus.MustNewConstMetric(fanSpeed, prometheus.GaugeValue, fanSpeedValue, target, fanName))
